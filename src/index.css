@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles pour l'application 9606 Capital */
+.gradient-bg {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.glass-effect {
+	background: rgba(255, 255, 255, 0.95);
+	backdrop-filter: blur(10px);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.slide-in {
+	animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Cap Rate Display Styles with Beautiful Gradients */
+.cap-rate-display {
+	background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+	/* transition: all 0.3s ease; */
+	color: white;
+	border: none;
+	/* cursor: pointer; */
+}
+
+/* .cap-rate-display:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+} */
+
+.cap-rate-display.orange {
+	background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+/* .cap-rate-display.orange:hover {
+	box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+} */
+
+.cap-rate-display.red {
+	background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* .cap-rate-display.red:hover {
+	box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+} */
+
+/* NOI Section Styles */
+.noi-section {
+	transition: all 0.3s ease;
+}
+
+.noi-section.active {
+	background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+	color: white;
+	transform: scale(1.02);
+}
+
+.noi-section.active input {
+	color: black;
+}
+
+/* Input Styles */
+.number-input {
+	transition: all 0.3s ease;
+}
+
+.number-input:focus {
+	transform: scale(1.02);
+	box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+/* Color Indicators */
+.color-indicator {
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	display: inline-block;
+	margin-right: 8px;
+}
+
+.color-indicator.green {
+	background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.color-indicator.orange {
+	background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.color-indicator.red {
+	background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
