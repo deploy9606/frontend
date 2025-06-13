@@ -20,6 +20,7 @@ export interface TenantRanking {
 	// Informations de base de l'entreprise (nouvelles données émergentes)
 	company: string;
 	operations: string;
+	contact_info: string; // Informations de contact (email)
 	score: number; // Score unifié (0-100) qui remplace likelihood et globalScore
 
 	// Localisation et proximité (critères 9606 Capital)

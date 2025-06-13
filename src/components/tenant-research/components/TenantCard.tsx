@@ -23,6 +23,11 @@ const TenantCard: React.FC<TenantCardProps> = ({ tenant, index }) => {
 						)}
 					</div>
 					<h4 className="text-lg font-semibold text-blue-700 mt-1">{tenant.company}</h4>
+					{tenant.contact_info && (
+						<p className="text-sm text-gray-600">
+							📧 {tenant.contact_info}
+						</p>	
+					)}
 					{tenant.nearbyLocation && tenant.distance && (
 						<p className="text-xs text-gray-500">
 							📍 {tenant.nearbyLocation} ({tenant.distance} miles)
