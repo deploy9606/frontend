@@ -4,6 +4,7 @@ import TenantRankingTable from "./TenantRankingTable";
 import TenantCard from "./TenantCard";
 import DropdownSection from "./DropdownSection";
 import ErrorSection from "./ErrorSection";
+import { convertToCSV, downloadCSV } from "../../../utils/convertToCSV";
 
 interface AnalysisResultsDisplayProps {
 	results: AnalysisResults;
@@ -28,6 +29,13 @@ const AnalysisResultsDisplay: React.FC<AnalysisResultsDisplayProps> = ({
 	const [selectedTenant, setSelectedTenant] = useState<TenantRanking | null>(null);
 
 	const displayMetadata = false;
+
+	const handleDownloadCSV = () => {
+	if (!results.tenantRanking?.length) return;
+
+	const csv = convertToCSV(results.tenantRanking);
+	downloadCSV(csv, "tenant_ranking.csv");
+};
 
 	return (
 		<div className="w-full max-w-6xl mt-8 space-y-6">
@@ -355,6 +363,14 @@ const AnalysisResultsDisplay: React.FC<AnalysisResultsDisplayProps> = ({
 
 					{/* Complete Ranking Table - Dropdown */}
 					<DropdownSection title="📊 Complete Tenant Ranking" defaultOpen={false}>
+						<div className="flex justify-end mb-4">
+							<button
+								onClick={handleDownloadCSV}
+								className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+							>
+								📥 Download CSV
+							</button>
+						</div>
 						<TenantRankingTable
 							tenants={results.tenantRanking!}
 							onTenantClick={setSelectedTenant}
@@ -454,5 +470,7 @@ const AnalysisResultsDisplay: React.FC<AnalysisResultsDisplayProps> = ({
 		</div>
 	);
 };
+
+
 
 export default AnalysisResultsDisplay;
