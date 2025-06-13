@@ -280,17 +280,6 @@ export const MarketStudy: React.FC<MarketStudyProps> = ({ propertyData }) => {
 													{industrialData.countryBusinessPatterns.transportation.establishments.toLocaleString()}
 												</span>
 											</div>
-											<div className="flex justify-between">
-												<span>Annual Payroll:</span>
-												<span className="font-semibold">
-													$
-													{(
-														industrialData.countryBusinessPatterns.transportation
-															.payroll / 1000000
-													).toFixed(1)}
-													M
-												</span>
-											</div>
 										</div>
 									)}
 								</div>
@@ -310,17 +299,6 @@ export const MarketStudy: React.FC<MarketStudyProps> = ({ propertyData }) => {
 												<span>Establishments:</span>
 												<span className="font-semibold">
 													{industrialData.countryBusinessPatterns.manufacturing.establishments.toLocaleString()}
-												</span>
-											</div>
-											<div className="flex justify-between">
-												<span>Annual Payroll:</span>
-												<span className="font-semibold">
-													$
-													{(
-														industrialData.countryBusinessPatterns.manufacturing.payroll /
-														1000000
-													).toFixed(1)}
-													M
 												</span>
 											</div>
 										</div>
@@ -344,17 +322,6 @@ export const MarketStudy: React.FC<MarketStudyProps> = ({ propertyData }) => {
 												<span>Establishments:</span>
 												<span className="font-semibold">
 													{industrialData.countryBusinessPatterns.warehousing.establishments.toLocaleString()}
-												</span>
-											</div>
-											<div className="flex justify-between">
-												<span>Annual Payroll:</span>
-												<span className="font-semibold">
-													$
-													{(
-														industrialData.countryBusinessPatterns.warehousing.payroll /
-														1000000
-													).toFixed(1)}
-													M
 												</span>
 											</div>
 										</div>

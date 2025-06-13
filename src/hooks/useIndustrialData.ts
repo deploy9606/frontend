@@ -9,22 +9,14 @@ interface IndustrialData {
 		transportation: {
 			employees: number;
 			establishments: number;
-			payroll: number;
 		};
 		manufacturing: {
 			employees: number;
 			establishments: number;
-			payroll: number;
 		};
 		warehousing: {
 			employees: number;
 			establishments: number;
-			payroll: number;
-		};
-		trucking: {
-			employees: number;
-			establishments: number;
-			payroll: number;
 		};
 	};
 	employmentData: {
