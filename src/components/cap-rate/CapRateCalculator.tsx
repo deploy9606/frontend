@@ -15,6 +15,10 @@ const CapRateCalculator: React.FC = () => {
 		propertyType: "",
 		propertySize: "", // in acres
 		buildingSize: "", // in sq ft
+		buildingRate: undefined,
+		buildingRateConfidence: undefined,
+		buildingRateIsLoading: false,
+		buildingRateError: undefined,
 	});
 
 	// NOI Data State

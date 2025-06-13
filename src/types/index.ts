@@ -132,7 +132,11 @@ export interface CapRatePropertyData {
 	propertyAddress: string;
 	propertyType: string;
 	propertySize: string; // en acres
-	buildingSize: string; // en sq ft
+	buildingSize: string; // en sq ft	// AI building rate estimation data
+	buildingRate?: number; // AI estimated rate
+	buildingRateConfidence?: "high" | "medium" | "low";
+	buildingRateIsLoading?: boolean;
+	buildingRateError?: string;
 }
 
 export interface NOIData {

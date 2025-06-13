@@ -1,6 +1,11 @@
-import React from "react";
+import React, { useEffect, useCallback } from "react";
 import type { CapRatePropertyData } from "../../types";
-import { parseFormattedNumber, formatNumber } from "../../utils/calculations";
+import {
+	parseFormattedNumber,
+	formatNumber,
+	formatCurrency,
+} from "../../utils/calculations";
+import { useBuildingRateEstimation } from "../../hooks/useBuildingRateEstimation";
 
 interface ManualEntryProps {
 	propertyData: CapRatePropertyData;
@@ -11,6 +16,70 @@ export const ManualEntry: React.FC<ManualEntryProps> = ({
 	propertyData,
 	setPropertyData,
 }) => {
+	const { estimateBuildingRate, error: estimationError } = useBuildingRateEstimation();
+
+	// Fonction pour estimer automatiquement le building rate
+	const handleBuildingRateEstimation = useCallback(async () => {
+		if (!propertyData.propertyAddress?.trim()) {
+			return;
+		}
+
+		// Marquer comme en cours de chargement
+		setPropertyData((prev) => ({
+			...prev,
+			buildingRateIsLoading: true,
+			buildingRateError: undefined,
+		}));
+
+		try {
+			const estimation = await estimateBuildingRate(
+				propertyData.propertyAddress,
+				propertyData.propertyType,
+				propertyData.buildingSize
+			);
+
+			if (estimation) {
+				setPropertyData((prev) => ({
+					...prev,
+					buildingRate: estimation.estimatedRate,
+					buildingRateConfidence: estimation.confidence,
+					buildingRateIsLoading: false,
+					buildingRateError: undefined,
+				}));
+			} else {
+				setPropertyData((prev) => ({
+					...prev,
+					buildingRateIsLoading: false,
+					buildingRateError: estimationError || "Estimation error",
+				}));
+			}
+		} catch {
+			setPropertyData((prev) => ({
+				...prev,
+				buildingRateIsLoading: false,
+				buildingRateError: "Error estimating building rate",
+			}));
+		}
+	}, [
+		propertyData.propertyAddress,
+		propertyData.propertyType,
+		propertyData.buildingSize,
+		estimateBuildingRate,
+		estimationError,
+		setPropertyData,
+	]);
+
+	// Déclencher l'estimation quand l'adresse change
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			if (propertyData.propertyAddress?.trim()) {
+				handleBuildingRateEstimation();
+			}
+		}, 1000); // Debounce de 1 seconde
+
+		return () => clearTimeout(timer);
+	}, [propertyData.propertyAddress, handleBuildingRateEstimation]);
+
 	const handleInputChange =
 		(field: keyof CapRatePropertyData) =>
 		(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -139,6 +208,62 @@ export const ManualEntry: React.FC<ManualEntryProps> = ({
 						placeholder="50,000"
 					/>
 				</div>
+			</div>
+			<div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+				<div className="flex items-center justify-between">
+					<div className="flex items-center text-blue-800">
+						<i className="fas fa-robot mr-2"></i>
+						<span className="font-medium">
+							Building Rate:{" "}
+							{propertyData.buildingRateIsLoading ? (
+								<span className="inline-flex items-center">
+									<i className="fas fa-spinner fa-spin mr-1"></i>
+									Estimating...
+								</span>
+							) : propertyData.buildingRate ? (
+								<span>${propertyData.buildingRate.toFixed(2)} per sq. ft. per year</span>
+							) : (
+								<span className="text-gray-500">Not estimated yet</span>
+							)}
+						</span>
+					</div>
+					{propertyData.buildingRateConfidence && (
+						<span
+							className={`px-2 py-1 text-xs rounded-full ${
+								propertyData.buildingRateConfidence === "high"
+									? "bg-green-100 text-green-800"
+									: propertyData.buildingRateConfidence === "medium"
+									? "bg-yellow-100 text-yellow-800"
+									: "bg-red-100 text-red-800"
+							}`}
+						>
+							Confidence: {propertyData.buildingRateConfidence}
+						</span>
+					)}
+				</div>
+
+				{propertyData.buildingRateError && (
+					<div className="mt-2 text-sm text-red-600 flex items-center">
+						<i className="fas fa-exclamation-triangle mr-1"></i>
+						{propertyData.buildingRateError}
+					</div>
+				)}
+
+				{propertyData.buildingRate && (
+					<div className="mt-2 text-xs text-blue-600 italic">
+						⚡ AI-generated estimation - Indicative value
+					</div>
+				)}
+
+				{propertyData.buildingSize && (
+					<div className="mt-2 text-sm text-blue-600">
+						Annual Building Revenue:{" "}
+						{formatCurrency(
+							parseFormattedNumber(propertyData.buildingSize) *
+								(propertyData.buildingRate || 7)
+						)}
+					</div>
+				)}
 			</div>
 		</div>
 	);
