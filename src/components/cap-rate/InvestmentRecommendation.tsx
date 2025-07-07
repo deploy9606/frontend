@@ -86,7 +86,7 @@ const InvestmentRecommendation: React.FC<InvestmentProps> = ({ propData }) => {
           <div>
             <h4 className="font-medium text-red-700 mb-1">Risks</h4>
             <ul className="list-disc ml-6 text-gray-700">
-              {data.propertyAnalysis.risks.map((point, i) => <li key={i}>{point}</li>)}
+              {data.propertyAnalysis ? data.propertyAnalysis.risks.map((point, i) => <li key={i}>{point}</li>): <li>No risks data available</li>}
             </ul>
           </div>
         </div>
@@ -98,13 +98,13 @@ const InvestmentRecommendation: React.FC<InvestmentProps> = ({ propData }) => {
           <div>
             <h4 className="font-medium text-green-700 mb-1">Strengths</h4>
             <ul className="list-disc ml-6 text-gray-700">
-              {data.marketAnalysis.strengths.map((point, i) => <li key={i}>{point}</li>)}
+              {data.marketAnalysis? data.marketAnalysis.strengths.map((point, i) => <li key={i}>{point}</li>): <li>No strengths data available</li>}
             </ul>
           </div>
           <div>
             <h4 className="font-medium text-red-700 mb-1">Risks</h4>
             <ul className="list-disc ml-6 text-gray-700">
-              {data.marketAnalysis.risks.map((point, i) => <li key={i}>{point}</li>)}
+              {data.marketAnalysis? data.marketAnalysis.risks.map((point, i) => <li key={i}>{point}</li>): <li>No risks data available</li>}
             </ul>
           </div>
         </div>
@@ -119,20 +119,20 @@ const InvestmentRecommendation: React.FC<InvestmentProps> = ({ propData }) => {
           <div>
             <h4 className="font-medium text-green-700 mb-1">Key Strengths</h4>
             <ul className="list-disc ml-6 text-gray-700">
-              {data.investmentSummary.keyStrengths.map((point, i) => <li key={i}>{point}</li>)}
+              {data.investmentSummary? data.investmentSummary.keyStrengths.map((point, i) => <li key={i}>{point}</li>): <li>No key strengths data available</li>}
             </ul>
           </div>
           <div>
             <h4 className="font-medium text-red-700 mb-1">Risks to Monitor</h4>
             <ul className="list-disc ml-6 text-gray-700">
-              {data.investmentSummary.risksToMonitor.map((point, i) => <li key={i}>{point}</li>)}
+              {data.investmentSummary? data.investmentSummary.risksToMonitor.map((point, i) => <li key={i}>{point}</li>): <li>No risks to monitor data available</li>}
             </ul>
           </div>
         </div>
 
         <div className="mt-4 bg-gray-50 p-4 rounded border border-gray-200">
           <h4 className="font-semibold text-gray-800 mb-2">🧾 Summary</h4>
-          <p className="text-gray-700">{data.investmentSummary.summary}</p>
+          <p className="text-gray-700">{data.investmentSummary? data.investmentSummary.summary: "no summary"}</p>
         </div>
       </div>
     </div>
