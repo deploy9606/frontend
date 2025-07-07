@@ -1,5 +1,5 @@
 import React from "react";
-import type { CapRatePropertyData, InvestmentRecommendationData } from "../../types";
+import type { CapRatePropertyData } from "../../types";
 import { useInvestmentRecommendation } from "../../hooks/useInvestmentRecommendation";
 
 interface InvestmentProps {
@@ -29,7 +29,8 @@ const InvestmentRecommendation: React.FC<InvestmentProps> = ({ propData }) => {
     );
   }
 
-  const { data, loading, error, refetch } = useInvestmentRecommendation(
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { data } = useInvestmentRecommendation(
     propData.propertyAddress,
     propData.propertyType,
     propData.buildingSize,

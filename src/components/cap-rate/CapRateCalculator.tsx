@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { CapRatePropertyData, NOIData, Assumptions, CapRateAnalysis, DevelopmentData } from "../../types";
+import type { CapRatePropertyData, NOIData, Assumptions, CapRateAnalysis} from "../../types";
 import { ManualEntry } from "./ManualEntry.tsx";
 import { NOICalculator } from "./NOICalculator.tsx";
 import { Assumptions as AssumptionsComponent } from "./Assumptions.tsx";
@@ -42,6 +42,7 @@ const CapRateCalculator: React.FC = () => {
 		capex: "150000",
 	});
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const [marketData, setMarketData] = useState<CapRateAnalysis>({
 		region: "", // e.g., "Baltimore"
 		year: 2024,

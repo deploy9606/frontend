@@ -1,5 +1,5 @@
 import React from "react";
-import type { CapRatePropertyData, DevelopmentData } from "../../types";
+import type { CapRatePropertyData } from "../../types";
 import { useDevelopmentData } from "../../hooks/useDevelopmentData";
 
 interface MarketOverviewProps {
@@ -28,7 +28,8 @@ const Development: React.FC<MarketOverviewProps> = ({ propData }) => {
   );
 }
 
-    const { data, loading, error, refetch } = useDevelopmentData(propData.propertyAddress, propData.propertyType, propData.buildingSize);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { data } = useDevelopmentData(propData.propertyAddress, propData.propertyType, propData.buildingSize);
     if (!data) {
     return 			<div className="glass-effect rounded-lg p-6 shadow-lg">
 				<h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">

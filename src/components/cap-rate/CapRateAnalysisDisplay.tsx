@@ -1,5 +1,4 @@
 import React from "react";
-import type { CapRateAnalysis } from "../../types";
 import type { CapRatePropertyData } from "../../types";
 import { useMarketDataEstimation } from "../../hooks/useMarketDataEstimation";
 interface CapRateProps {
@@ -10,9 +9,7 @@ const CapRateAnalysisDisplay: React.FC<CapRateProps> = ({ propData }) => {
 
   const {  data,
     loading,
-    error,
-    refetch
-  } = useMarketDataEstimation(propData.propertyAddress);
+    error  } = useMarketDataEstimation(propData.propertyAddress);
 
   if (loading) {
     return <div>Loading...</div>;

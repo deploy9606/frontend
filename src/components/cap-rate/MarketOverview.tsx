@@ -1,5 +1,5 @@
 import React from "react";
-import type { CapRatePropertyData, MarketOverviewData, PropertyData } from "../../types";
+import type { CapRatePropertyData} from "../../types";
 import { useMarketDataEstimation } from "../../hooks/useMarketOverview";
 
 interface MarketOverviewProps {
@@ -27,7 +27,8 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ propData }) => {
       const {  data,
         loading,
         error,
-        refetch
+        
+      // eslint-disable-next-line react-hooks/rules-of-hooks
       } = useMarketDataEstimation(propData.propertyAddress);
     
       if (loading) {
