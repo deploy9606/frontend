@@ -6,6 +6,8 @@ interface InvestmentProps {
   propData: CapRatePropertyData;
 }
 
+
+
 const InvestmentRecommendation: React.FC<InvestmentProps> = ({ propData }) => {
   if (
     !propData ||
@@ -47,6 +49,21 @@ const InvestmentRecommendation: React.FC<InvestmentProps> = ({ propData }) => {
           <i className="fas fa-warehouse text-4xl text-gray-400 mb-4"></i>
           <p className="text-gray-600">
             Enter a property address to evaluate investment opportunities.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  if(data.propertyAnalysis === null || data.marketAnalysis === null || data.investmentSummary === null) {
+    return (
+      <div className="glass-effect rounded-lg p-6 shadow-lg">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+          📊 Investment Recommendation
+        </h2>
+        <div className="text-center py-8">
+          <i className="fas fa-warehouse text-4xl text-gray-400 mb-4"></i>
+          <p className="text-gray-600">
+            Failed to retrieve investment recommendation data. Please try again later.
           </p>
         </div>
       </div>
