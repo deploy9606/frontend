@@ -1,11 +1,15 @@
 import React, { useState } from "react";
-import type { CapRatePropertyData, NOIData, Assumptions } from "../../types";
+import type { CapRatePropertyData, NOIData, Assumptions, CapRateAnalysis, DevelopmentData } from "../../types";
 import { ManualEntry } from "./ManualEntry.tsx";
 import { NOICalculator } from "./NOICalculator.tsx";
 import { Assumptions as AssumptionsComponent } from "./Assumptions.tsx";
 import { Results } from "./Results.tsx";
 import { CustomCapRateCalculator } from "./CustomCapRateCalculator.tsx";
 import { MarketStudy } from "./MarketStudy.tsx";
+import CapRateAnalysisDisplay  from "./CapRateAnalysisDisplay.tsx";
+import MarketOverview from "./MarketOverview.tsx";
+import Development from "./Development.tsx";
+import InvestmentRecommendation from "./InvestmentRecommendation.tsx";
 
 const CapRateCalculator: React.FC = () => {
 	// Property Data State
@@ -15,8 +19,8 @@ const CapRateCalculator: React.FC = () => {
 		propertyType: "",
 		propertySize: "", // in acres
 		buildingSize: "", // in sq ft
-		buildingRate: undefined,
-		buildingRateConfidence: undefined,
+		geminiBuildingRate: undefined,
+		geminiBuildingRateConfidence: undefined,
 		buildingRateIsLoading: false,
 		buildingRateError: undefined,
 	});
@@ -36,6 +40,23 @@ const CapRateCalculator: React.FC = () => {
 		loanInterest: "7.0",
 		ltc: "30",
 		capex: "150000",
+	});
+
+	const [marketData, setMarketData] = useState<CapRateAnalysis>({
+		region: "", // e.g., "Baltimore"
+		year: 2024,
+		marketAverages: [],
+		subjectProperty: {
+			locationNotes: "",
+			classification: "",
+			expectedCapRateRange: "",
+		},
+		marketContext: [],
+		comparableSales: [],
+		investmentRecommendation: {
+			targetCapRateRange: "",
+			justification: [],
+		},
 	});
 
 	return (
@@ -84,6 +105,16 @@ const CapRateCalculator: React.FC = () => {
 
 					{/* Market Study Section */}
 					<MarketStudy propertyData={propertyData} />
+					{/* Market Data Estimation */}
+					<CapRateAnalysisDisplay propData={propertyData} />
+					<MarketOverview propData={propertyData} />
+
+					{/* Cap Rate Analysis Display */}
+					<Development propData={propertyData} />
+
+					<InvestmentRecommendation propData={propertyData} />
+					
+					
 				</div>
 
 				{/* Footer */}

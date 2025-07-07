@@ -134,10 +134,30 @@ export interface CapRatePropertyData {
 	propertyType: string;
 	propertySize: string; // en acres
 	buildingSize: string; // en sq ft	// AI building rate estimation data
-	buildingRate?: number; // AI estimated rate
-	buildingRateConfidence?: "high" | "medium" | "low";
+	geminiBuildingRate?: number; // AI estimated rate
+	openAIBuildingRate?: number; // AI estimated rate
+	geminiLowerEnd?: number; // Lower end of AI estimated rate
+	openAILowerEnd?: number; // Lower end of AI estimated rate
+	geminiUpperEnd?: number; // Upper end of AI estimated rate
+	openAIUpperEnd?: number; // Upper end of AI estimated rate
+	geminiBuildingRateConfidence?: "high" | "medium" | "low";
+	openAIBuildingRateConfidence?: "high" | "medium" | "low";
+
 	buildingRateIsLoading?: boolean;
 	buildingRateError?: string;
+
+
+	geminiLandRate?: number; // AI estimated rate
+	openAILandRate?: number; // AI estimated rate
+	geminiLandLowerEnd?: number; // Lower end of AI estimated rate
+	openAILandLowerEnd?: number; // Lower end of AI estimated rate
+	geminiLandUpperEnd?: number; // Upper end of AI estimated rate
+	openAILandUpperEnd?: number; // Upper end of AI estimated rate
+	geminiLandRateConfidence?: "high" | "medium" | "low";
+	openAILandRateConfidence?: "high" | "medium" | "low";
+
+	landRateIsLoading?: boolean;
+	landRateError?: string;
 }
 
 export interface NOIData {
@@ -176,4 +196,128 @@ export interface MarketData {
 	averageRent: number;
 	pricePerSqFt: number;
 	constructionVolume: number;
+}
+
+export interface CapRateAnalysis {
+  region: string; // e.g., "Baltimore"
+  year: number; // e.g., 2024
+  marketAverages: MarketRange[];
+  subjectProperty: SubjectProperty;
+  marketContext: string[];
+  comparableSales: ComparableSale[];
+  investmentRecommendation: InvestmentRecommendation;
+}
+
+export interface MarketRange {
+  label: string; // e.g., "Prime Locations (BWI/Port)"
+  range: string; // e.g., "6.0% – 7.5%"
+}
+
+export interface SubjectProperty {
+  locationNotes: string; // description of proximity to port, airport, etc.
+  classification: string; // e.g., "Prime Industrial Location"
+  expectedCapRateRange: string; // e.g., "7.0% – 8.0%"
+}
+
+export interface ComparableSale {
+  name: string; // e.g., "Race Road Logistics Center"
+  size: string; // e.g., "130,000 SF"
+  location: string; // e.g., "Hanover"
+  capRateRange: string; // e.g., "6.5% – 7.0%"
+  source: string; // e.g., "CBRE", "REPORC"
+}
+
+export interface InvestmentRecommendation {
+  targetCapRateRange: string; // e.g., "7.5% – 8.0%"
+  justification: string[]; // bullet points of reasoning
+}
+
+export interface MarketOverviewData {
+  region: string;
+  year: number;
+  economicOutlook: {
+    status: 'Boom' | 'Growing' | 'Slowing' | 'Stagnant';
+    description: string;
+  };
+  vacancyRate: {
+    value: string;   // e.g. "6.2%"
+    source: string;
+  };
+  absorptionRate: {
+    value: string;   // e.g. "4.3 MSF net positive"
+    source: string;
+  };
+  leaseRates: {
+    buildingRate: {
+      average: string; // e.g. "$8.25/sq ft/year"
+      range: string;
+      source: string;
+    };
+    iosLandRate: {
+      average: string; // e.g. "$5,000/acre/month"
+      range: string;
+      source: string;
+    };
+  };
+  capRates: {
+    average: string;  // e.g. "6.5%"
+    range: string;
+    source: string;
+  };
+  taxIncentives: {
+    name: string;
+    description: string;
+    source: string;
+  }[];
+  marketSummary: string;
+}
+
+export interface DevelopmentData {
+	warning: string; // e.g. "Data is for illustrative purposes only"
+  region: string;
+  analysisDate: string; // ISO 8601 date string
+  growthStatus: "Growing" | "Declining" | "Stagnant";
+  growthSummary: string;
+
+  developments: {
+    name: string;
+    type: string;
+    distanceFromSubject: string;
+    impact: "positive" | "negative" | "neutral";
+    description: string;
+    status: "Planned" | "Under Construction" | "Completed" | "Announced";
+    investmentValue: string;
+    completionDate: string; // "YYYY-MM"
+    source: string;
+  }[];
+
+  offshoringActivity: {
+    company: string;
+    activity: string;
+    location: string;
+    forecastImpact: "positive" | "negative" | "neutral";
+    description: string;
+    timeline: string;
+    source: string;
+  }[];
+
+  developmentSummary: string;
+}
+
+export interface InvestmentRecommendationData {
+  propertyAnalysis: {
+    strengths: string[];
+    risks: string[];
+  };
+  marketAnalysis: {
+    strengths: string[];
+    risks: string[];
+  };
+  investmentSummary: {
+    keyStrengths: string[];
+    risksToMonitor: string[];
+    timing: string;
+    strategy: string;
+    summary: string;
+  };
 }

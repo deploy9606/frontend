@@ -4,12 +4,15 @@ import { buildApiUrl } from "../config/api";
 interface BuildingRateEstimation {
 	estimatedRate: number;
 	confidence: "high" | "medium" | "low";
+	estimatedLowerEnd?: number;
+	estimatedUpperEnd?: number;
 	error?: boolean;
 }
 
 interface BuildingRateResponse {
 	success: boolean;
 	data: BuildingRateEstimation;
+	dataOpenAI: BuildingRateEstimation;
 	timestamp: string;
 }
 
@@ -22,7 +25,8 @@ export const useBuildingRateEstimation = () => {
 			propertyAddress: string,
 			propertyType?: string,
 			buildingSize?: string
-		): Promise<BuildingRateEstimation | null> => {
+		): Promise<{geminiEstimate: BuildingRateEstimation;
+			openAIEstimate: BuildingRateEstimation;} | null> => {
 			if (!propertyAddress?.trim()) {
 				return null;
 			}
@@ -31,7 +35,7 @@ export const useBuildingRateEstimation = () => {
 			setError(null);
 
 			try {
-				const response = await fetch(buildApiUrl("/api/building-rate/estimate"), {
+				const response = await fetch(buildApiUrl("/api/building-rate/estimate-building"), {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -52,8 +56,9 @@ export const useBuildingRateEstimation = () => {
 				if (!result.success) {
 					throw new Error("Failed to estimate building rate");
 				}
+				console.log("Building rate estimation result:", result.data);
 
-				return result.data;
+				return {geminiEstimate: result.data, openAIEstimate: result.dataOpenAI};
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "An error occurred";
 				setError(errorMessage);
