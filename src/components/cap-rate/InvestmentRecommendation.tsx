@@ -63,7 +63,7 @@ const InvestmentRecommendation: React.FC<InvestmentProps> = ({ propData }) => {
           <div>
             <h4 className="font-medium text-green-700 mb-1">Strengths</h4>
             <ul className="list-disc ml-6 text-gray-700">
-              {data.propertyAnalysis.strengths.map((point, i) => <li key={i}>{point}</li>)}
+              {data.propertyAnalysis ? data.propertyAnalysis.strengths.map((point, i) => <li key={i}>{point}</li>): <li>No strengths data available</li>}
             </ul>
           </div>
           <div>
