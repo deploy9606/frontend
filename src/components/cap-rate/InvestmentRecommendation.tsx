@@ -112,8 +112,8 @@ const InvestmentRecommendation: React.FC<InvestmentProps> = ({ propData }) => {
 
       <div>
         <h3 className="text-xl font-semibold text-gray-800 mb-2">💼 Strategic Investment Summary</h3>
-        <p className="mb-2"><span className="font-semibold">Timing:</span> {data.investmentSummary.timing}</p>
-        <p className="mb-2"><span className="font-semibold">Strategy:</span> {data.investmentSummary.strategy}</p>
+        <p className="mb-2"><span className="font-semibold">Timing:</span> {data.investmentSummary? data.investmentSummary.timing: ""}</p>
+        <p className="mb-2"><span className="font-semibold">Strategy:</span> {data.investmentSummary? data.investmentSummary.strategy: ""}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3">
           <div>
