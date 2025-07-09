@@ -533,7 +533,7 @@ export const ManualEntry: React.FC<ManualEntryProps> = ({
 					) : propertyData.openAILandLowerEnd ? (
 						<span>${propertyData.openAILandLowerEnd.toFixed(2)} / acre</span>
 					) : (
-						<span className="text-gray-500">{propertyData.geminiLandLowerEnd? ((propertyData.geminiLandLowerEnd-300).toFixed(2)+300): "unavailable"}</span>
+						<span >{propertyData.geminiLandLowerEnd? ((propertyData.geminiLandLowerEnd-300).toFixed(2)): "unavailable"} / acre </span>
 					)}
 				</div>
 				<div className="font-medium">
@@ -546,7 +546,7 @@ export const ManualEntry: React.FC<ManualEntryProps> = ({
 					) : propertyData.openAILandUpperEnd ? (
 						<span>${propertyData.openAILandUpperEnd.toFixed(2)} / acre</span>
 					) : (
-						<span className="text-gray-500">{propertyData.geminiLandUpperEnd? ((propertyData.geminiLandUpperEnd+500).toFixed(2)): "unavailable"}</span>
+						<span>{propertyData.geminiLandUpperEnd? ((propertyData.geminiLandUpperEnd+500).toFixed(2)): "unavailable"} / acre</span>
 					)}
 				</div>
 				{propertyData.openAILandRateConfidence && (
