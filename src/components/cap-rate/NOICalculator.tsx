@@ -62,7 +62,7 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
 						: "0.00",
 			}));
 		} else if (section === "sqft") {
-			const totalMonthly = numericValue * parseFormattedNumber(propertyData.buildingSize);
+			const totalMonthly = numericValue * parseFormattedNumber(propertyData.buildingSize)*12;
 			setNoiData((prev) => ({
 				...prev,
 				monthlyPropertyNOI: totalMonthly > 0 ? formatNumber(totalMonthly, 2) : "0.00",
@@ -219,7 +219,7 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
 				>
 					<h3 className="text-lg font-semibold mb-3 flex items-center">
 						<i className="fas fa-ruler-combined mr-2"></i>
-						Monthly NOI per Sq. Ft
+						Yearly NOI per Sq. Ft
 						{isFieldDisabled() && (
 							<i
 								className="fas fa-lock ml-2 text-gray-400"
@@ -264,7 +264,7 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
 					<div>
 						<span className="text-gray-600">Annual NOI per Sq. Ft:</span>
 						<div className="font-semibold text-purple-600">
-							{formatCurrency(parseFormattedNumber(noiData.monthlySqFtNOI) * 12)}
+							{formatCurrency(parseFormattedNumber(noiData.monthlySqFtNOI) )}
 						</div>
 					</div>
 				</div>
