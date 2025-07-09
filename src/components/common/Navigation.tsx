@@ -30,7 +30,7 @@ const Navigation: React.FC<NavigationProps> = ({
 								} text-white px-3 py-2 rounded-md text-sm font-medium transition-colors`}
 							>
 								<i className="fas fa-search mr-2"></i>
-								Tenant Research
+								Suspect Tenant Prospecting
 							</Link>
 							<Link
 								to="/cap-rate"
@@ -41,7 +41,7 @@ const Navigation: React.FC<NavigationProps> = ({
 								} text-white px-3 py-2 rounded-md text-sm font-medium transition-colors`}
 							>
 								<i className="fas fa-calculator mr-2"></i>
-								Cap Rate Calculator
+								Selective Acquisition
 							</Link>
 						</div>
 					</div>

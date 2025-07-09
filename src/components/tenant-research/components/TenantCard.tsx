@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import type { TenantRanking } from "../../../types";
+import { faker } from "@faker-js/faker";
 
 interface TenantCardProps {
 	tenant: TenantRanking;
@@ -33,6 +34,15 @@ const TenantCard: React.FC<TenantCardProps> = ({ tenant, index }) => {
 							📍 {tenant.nearbyLocation} ({tenant.distance} miles)
 						</p>
 					)}
+					<p className="text-sm text-gray-600">
+							Contact person: {faker.person.fullName()}{" "}
+						</p>
+						<p className="text-sm text-gray-600">
+							Contact number {faker.phone.number({ style: "national" })}
+						</p>
+						
+					
+
 				</div>
 				<div className="text-right">
 					<div className="flex items-center mb-1">
