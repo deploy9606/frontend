@@ -556,10 +556,10 @@ export const ManualEntry: React.FC<ManualEntryProps> = ({
 								? "bg-green-100 text-green-800"
 								: propertyData.openAILandRateConfidence === "medium"
 								? "bg-yellow-100 text-yellow-800"
-								: "bg-red-100 text-red-800"
+								: "bg-yellow-100 text-yellow-800"
 						}`}
 					>
-						Confidence: {propertyData.openAILandRateConfidence}
+						Confidence: {propertyData.openAILandRateConfidence? propertyData.openAILandRateConfidence: "medium"}
 					</div>
 				)}
 					
