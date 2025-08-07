@@ -13,6 +13,12 @@ interface ManualEntryProps {
 	setPropertyData: React.Dispatch<React.SetStateAction<CapRatePropertyData>>;
 }
 
+const confidenceRank = {
+	low: 0,
+	medium: 1,
+	high: 2,
+};
+
 export const ManualEntry: React.FC<ManualEntryProps> = ({
 	propertyData,
 	setPropertyData,
@@ -42,19 +48,34 @@ export const ManualEntry: React.FC<ManualEntryProps> = ({
 
 			if (estimation) {
 				const { geminiEstimate, openAIEstimate } = estimation;
-				setPropertyData((prev) => ({
+				setPropertyData((prev) => {
+				const shouldUpdateGemini =
+					!prev.geminiBuildingRateConfidence ||
+					confidenceRank[geminiEstimate.confidence] >
+						confidenceRank[prev.geminiBuildingRateConfidence];
+
+				const shouldUpdateOpenAI =
+					!prev.openAIBuildingRateConfidence ||
+					confidenceRank[openAIEstimate.confidence] >
+						confidenceRank[prev.openAIBuildingRateConfidence];
+
+				return {
 					...prev,
-					geminiBuildingRate: geminiEstimate.estimatedRate,
-					geminiBuildingRateConfidence: geminiEstimate.confidence,
-					openAIBuildingRate: openAIEstimate.estimatedRate,
-					openAIBuildingRateConfidence: openAIEstimate.confidence,
-					geminiLowerEnd: geminiEstimate.estimatedLowerEnd,
-					openAILowerEnd: openAIEstimate.estimatedLowerEnd,
-					geminiUpperEnd: geminiEstimate.estimatedUpperEnd,
-					openAIUpperEnd: openAIEstimate.estimatedUpperEnd,
+					...(shouldUpdateGemini && {
+						geminiBuildingRate: geminiEstimate.estimatedRate,
+						geminiBuildingRateConfidence: geminiEstimate.confidence,
+						geminiLowerEnd: geminiEstimate.estimatedLowerEnd,
+						geminiUpperEnd: geminiEstimate.estimatedUpperEnd,
+					}),
+					...(shouldUpdateOpenAI && {
+						openAIBuildingRate: openAIEstimate.estimatedRate,
+						openAIBuildingRateConfidence: openAIEstimate.confidence,
+						openAILowerEnd: openAIEstimate.estimatedLowerEnd,
+						openAIUpperEnd: openAIEstimate.estimatedUpperEnd,
+					}),
 					buildingRateIsLoading: false,
 					buildingRateError: undefined,
-				}));
+				}});
 				console.log("lower end", geminiEstimate.estimatedLowerEnd);
 			} else {
 				setPropertyData((prev) => ({
@@ -99,19 +120,35 @@ export const ManualEntry: React.FC<ManualEntryProps> = ({
 
 			if (estimation) {
 				const { geminiEstimate, openAIEstimate } = estimation;
-				setPropertyData((prev) => ({
+				setPropertyData((prev) => {
+				const shouldUpdateGemini =
+					!prev.geminiLandRateConfidence ||
+					confidenceRank[geminiEstimate.confidence] >
+						confidenceRank[prev.geminiLandRateConfidence];
+
+				const shouldUpdateOpenAI =
+					!prev.openAILandRateConfidence ||
+					confidenceRank[openAIEstimate.confidence] >
+						confidenceRank[prev.openAILandRateConfidence];
+
+				return {
 					...prev,
-					geminiLandRate: geminiEstimate.averageMarketRate,
-					geminiLandRateConfidence: geminiEstimate.confidence,
-					openAILandRate: openAIEstimate.averageMarketRate,
-					openAILandRateConfidence: openAIEstimate.confidence,
-					geminiLandLowerEnd: geminiEstimate.estimatedLowerEnd,
-					openAILandLowerEnd: openAIEstimate.estimatedLowerEnd,
-					geminiLandUpperEnd: geminiEstimate.estimatedUpperEnd,
-					openAILandUpperEnd: openAIEstimate.estimatedUpperEnd,
+					...(shouldUpdateGemini && {
+						geminiLandRate: geminiEstimate.averageMarketRate,
+						geminiLandRateConfidence: geminiEstimate.confidence,
+						geminiLandLowerEnd: geminiEstimate.estimatedLowerEnd,
+						geminiLandUpperEnd: geminiEstimate.estimatedUpperEnd,
+					}),
+					...(shouldUpdateOpenAI && {
+						openAILandRate: openAIEstimate.averageMarketRate,
+						openAILandRateConfidence: openAIEstimate.confidence,
+						openAILandLowerEnd: openAIEstimate.estimatedLowerEnd,
+						openAILandUpperEnd: openAIEstimate.estimatedUpperEnd,
+					}),
 					landRateIsLoading: false,
 					landRateError: undefined,
-				}));
+				};
+			});
 				console.log("lower end", geminiEstimate.estimatedLowerEnd);
 			} else {
 				setPropertyData((prev) => ({
