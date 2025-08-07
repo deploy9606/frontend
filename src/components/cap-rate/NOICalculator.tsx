@@ -3,7 +3,7 @@ import type { NOIData, CapRatePropertyData } from "../../types";
 import {
   parseFormattedNumber,
   formatCurrency,
-  formatStringValue,
+  
   formatNumber,
 } from "../../utils/calculations";
 
@@ -13,132 +13,119 @@ interface NOICalculatorProps {
   propertyData: CapRatePropertyData;
 }
 
+/**
+ * Logic enforced:
+ * Monthly NOI = ($/acre/mo × acres) + ($/sf/mo × building sf)
+ *
+ * - User enters Monthly NOI (editable).
+ * - Then user can edit EITHER $/acre/mo OR $/sf/mo (selectable). The other is auto-calculated
+ *   so the identity holds. Sizes come only from `propertyData`.
+ */
 export const NOICalculator: React.FC<NOICalculatorProps> = ({
   noiData,
   setNoiData,
   propertyData,
 }) => {
-  const [activeSection, setActiveSection] = useState<"monthly" | "acre" | "sqft">(
-    "monthly"
-  );
+  const [activeSection, setActiveSection] = useState<"monthly" | "acre" | "sqft">("monthly");
+  const [inputMode, setInputMode] = useState<"acre" | "sqft">("acre"); // which per-unit rate is user-editable
 
-  // Which per-unit rate should remain fixed when user edits total Monthly NOI?
-  const [lastEditedRate, setLastEditedRate] = useState<"acre" | "sqft" | null>(null);
+  const acres = propertyData.propertySize ? parseFormattedNumber(propertyData.propertySize) : 0;
+  const sqft = propertyData.buildingSize ? parseFormattedNumber(propertyData.buildingSize) : 0;
 
-  const handleNOIChange = (
-    section: "monthly" | "acre" | "sqft",
-    value: string
+  const monthlyTotal = noiData.monthlyPropertyNOI
+    ? parseFormattedNumber(noiData.monthlyPropertyNOI)
+    : 0;
+
+  const acreRate = noiData.monthlyAcreNOI
+    ? parseFormattedNumber(noiData.monthlyAcreNOI)
+    : 0;
+
+  const sqftRate = noiData.monthlySqFtNOI
+    ? parseFormattedNumber(noiData.monthlySqFtNOI)
+    : 0;
+
+  const missingAcres = !propertyData.propertySize || acres <= 0;
+  const missingSqft = !propertyData.buildingSize || sqft <= 0;
+  const sizesReady = !missingAcres && !missingSqft;
+
+  // --- Helpers
+  const fmtNum = (n: number, dp: number) => formatNumber(isFinite(n) ? n : 0, dp);
+
+  const recomputeOtherRate = (
+    locked: "acre" | "sqft",
+    totalMonthly: number,
+    lockedVal: number
   ) => {
-    // Require both sizes to compute derived values
-    if (!propertyData.propertySize || !propertyData.buildingSize) return;
-
-    const acres = parseFormattedNumber(propertyData.propertySize);
-    const sqft = parseFormattedNumber(propertyData.buildingSize);
-    if (!acres || !sqft) return; // guard against zero/invalid sizes
-
-    const v = parseFormattedNumber(value);
-
-    // Current rates (monthly)
-    const currentAcreRate = parseFormattedNumber(noiData.monthlyAcreNOI); // $/acre/mo
-    const currentSqftRate = parseFormattedNumber(noiData.monthlySqFtNOI); // $/sf/mo
-
-    if (section === "monthly") {
-      const monthlyProp = v;
-
-      // decide which rate is locked
-      let locked: "acre" | "sqft" | null = lastEditedRate;
-      if (!locked) {
-        if (currentAcreRate > 0) locked = "acre";
-        else if (currentSqftRate > 0) locked = "sqft";
-      }
-
-      if (locked === "acre" && currentAcreRate >= 0) {
-        const remainder = monthlyProp - currentAcreRate * acres;
-        const newSqftRate = remainder / sqft;
-        setNoiData((prev) => ({
-          ...prev,
-          monthlyPropertyNOI: formatStringValue(value),
-          monthlyAcreNOI: formatNumber(currentAcreRate, 2),
-          monthlySqFtNOI: formatNumber(newSqftRate, 4),
-        }));
-      } else if (locked === "sqft" && currentSqftRate >= 0) {
-        const remainder = monthlyProp - currentSqftRate * sqft;
-        const newAcreRate = remainder / acres;
-        setNoiData((prev) => ({
-          ...prev,
-          monthlyPropertyNOI: formatStringValue(value),
-          monthlyAcreNOI: formatNumber(newAcreRate, 2),
-          monthlySqFtNOI: formatNumber(currentSqftRate, 4),
-        }));
-      } else {
-        // No locked rate yet → keep total, zero the per-unit rates until user sets one
-        setNoiData((prev) => ({
-          ...prev,
-          monthlyPropertyNOI: formatStringValue(value),
-          monthlyAcreNOI: "0.00",
-          monthlySqFtNOI: "0.0000",
-        }));
-      }
-    } else if (section === "acre") {
-      const acreRate = v; // $/acre/mo
-      const monthlyProp = acreRate * acres + currentSqftRate * sqft;
+    if (!sizesReady) {
       setNoiData((prev) => ({
         ...prev,
-        monthlyPropertyNOI: formatNumber(monthlyProp, 2),
-        monthlyAcreNOI: formatStringValue(value),
-        monthlySqFtNOI: formatNumber(currentSqftRate, 4),
+        monthlyPropertyNOI: fmtNum(totalMonthly, 2),
+        monthlyAcreNOI: locked === "acre" ? fmtNum(lockedVal, 2) : "0.00",
+        monthlySqFtNOI: locked === "sqft" ? fmtNum(lockedVal, 4) : "0.0000",
       }));
-      setLastEditedRate("acre");
-    } else if (section === "sqft") {
-      const sqftRate = v; // $/sf/mo
-      const monthlyProp = currentAcreRate * acres + sqftRate * sqft;
-      setNoiData((prev) => ({
-        ...prev,
-        monthlyPropertyNOI: formatNumber(monthlyProp, 2),
-        monthlyAcreNOI: formatNumber(currentAcreRate, 2),
-        monthlySqFtNOI: formatStringValue(value),
-      }));
-      setLastEditedRate("sqft");
+      return;
     }
 
-    setActiveSection(section);
+    if (locked === "acre") {
+      // total = acreRate*acres + sqftRate*sqft  =>  sqftRate = (total - acreRate*acres)/sqft
+      const newSqftRate = (totalMonthly - lockedVal * acres) / sqft;
+      setNoiData((prev) => ({
+        ...prev,
+        monthlyPropertyNOI: fmtNum(totalMonthly, 2),
+        monthlyAcreNOI: fmtNum(lockedVal, 2),
+        monthlySqFtNOI: fmtNum(newSqftRate, 4),
+      }));
+    } else {
+      // locked === "sqft" => acreRate = (total - sqftRate*sqft)/acres
+      const newAcreRate = (totalMonthly - lockedVal * sqft) / acres;
+      setNoiData((prev) => ({
+        ...prev,
+        monthlyPropertyNOI: fmtNum(totalMonthly, 2),
+        monthlyAcreNOI: fmtNum(newAcreRate, 2),
+        monthlySqFtNOI: fmtNum(lockedVal, 4),
+      }));
+    }
+  };
+
+  // --- Handlers
+  const handleMonthlyChange = (value: string) => {
+    const v = parseFormattedNumber(value);
+    // Keep the currently selected inputMode as the "locked" rate; recompute the other
+    const lockedVal = inputMode === "acre" ? acreRate : sqftRate;
+    recomputeOtherRate(inputMode, isNaN(v) ? 0 : v, lockedVal);
+    setActiveSection("monthly");
+  };
+
+  const handleAcreRateChange = (value: string) => {
+    setInputMode("acre");
+    const v = parseFormattedNumber(value);
+    // Recompute sqft rate to keep total constant
+    recomputeOtherRate("acre", monthlyTotal, isNaN(v) ? 0 : v);
+    setActiveSection("acre");
+  };
+
+  const handleSqftRateChange = (value: string) => {
+    setInputMode("sqft");
+    const v = parseFormattedNumber(value);
+    // Recompute acre rate to keep total constant
+    recomputeOtherRate("sqft", monthlyTotal, isNaN(v) ? 0 : v);
+    setActiveSection("sqft");
   };
 
   const getSectionClass = (section: "monthly" | "acre" | "sqft") => {
-    const isDisabled = isFieldDisabled();
-    const baseClass = `noi-section p-6 rounded-lg border-2 transition-all ${
-      isDisabled
-        ? "cursor-not-allowed opacity-50 border-gray-200 bg-gray-100"
-        : "cursor-pointer"
-    }`;
-
-    if (isDisabled) {
-      return baseClass;
-    }
-
-    return `${baseClass} ${
-      activeSection === section
-        ? "active border-blue-500"
-        : "border-gray-200 hover:border-gray-300"
+    const base = "noi-section p-6 rounded-lg border-2 transition-all";
+    return `${base} ${
+      activeSection === section ? "active border-blue-500" : "border-gray-200 hover:border-gray-300"
     }`;
   };
 
-  const isFieldDisabled = (): boolean => {
-    return !propertyData.propertySize || !propertyData.buildingSize;
-  };
-
-  const getTooltipMessage = (): string => {
-    if (!propertyData.propertySize && !propertyData.buildingSize) {
-      return "Please enter both property size (acres) and building size (sq ft) first";
-    }
-    if (!propertyData.propertySize) {
-      return "Please enter property size (acres) first";
-    }
-    if (!propertyData.buildingSize) {
-      return "Please enter building size (sq ft) first";
-    }
+  const perUnitDisabledReason = () => {
+    if (!sizesReady) return "Enter property acres and building sq ft first";
+    if (!noiData.monthlyPropertyNOI || monthlyTotal === 0) return "Enter Monthly NOI first";
     return "";
   };
+
+  const perUnitInputsEnabled = sizesReady && monthlyTotal !== 0;
 
   return (
     <div className="glass-effect rounded-lg p-6 shadow-lg">
@@ -147,8 +134,8 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
         Net Operating Income (Monthly)
       </h2>
 
-      {/* Info message when sizes are missing */}
-      {(!propertyData.propertySize || !propertyData.buildingSize) && (
+      {/* Notices */}
+      {(!sizesReady || monthlyTotal === 0) && (
         <div className="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-md">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -156,59 +143,91 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
             </div>
             <div className="ml-3">
               <p className="text-sm text-yellow-700">
-                <strong>Required Information:</strong> To use the NOI calculator, please first enter:
+                <strong>Heads up:</strong> Per-unit values are calculated from Monthly NOI using the sizes in
+                property data.
               </p>
               <ul className="mt-2 text-sm text-yellow-700 list-disc list-inside">
-                {!propertyData.propertySize && <li>Property size (acres)</li>}
-                {!propertyData.buildingSize && <li>Building size (square feet)</li>}
+                {!sizesReady && (
+                  <>
+                    {missingAcres && <li>Property size (acres) is missing.</li>}
+                    {missingSqft && <li>Building size (sq ft) is missing.</li>}
+                  </>
+                )}
+                {monthlyTotal === 0 && <li>Enter Monthly Property NOI to enable per-unit inputs.</li>}
               </ul>
             </div>
           </div>
         </div>
       )}
 
+      {/* Input mode toggle */}
+      <div className="mb-4 flex items-center gap-2">
+        <span className="text-sm text-gray-600">Per-unit input mode:</span>
+        <div className="inline-flex rounded-md shadow-sm overflow-hidden border border-gray-200">
+          <button
+            type="button"
+            className={`px-3 py-1 text-sm ${inputMode === "acre" ? "bg-blue-600 text-white" : "bg-white text-gray-700"}`}
+            onClick={() => {
+              setInputMode("acre");
+              // When switching, recompute the *now disabled* field from the current locked one
+              recomputeOtherRate("acre", monthlyTotal, acreRate);
+            }}
+            disabled={!perUnitInputsEnabled}
+            title={!perUnitInputsEnabled ? perUnitDisabledReason() : ""}
+          >
+            $/acre/mo
+          </button>
+          <button
+            type="button"
+            className={`px-3 py-1 text-sm border-l border-gray-200 ${
+              inputMode === "sqft" ? "bg-blue-600 text-white" : "bg-white text-gray-700"
+            }`}
+            onClick={() => {
+              setInputMode("sqft");
+              recomputeOtherRate("sqft", monthlyTotal, sqftRate);
+            }}
+            disabled={!perUnitInputsEnabled}
+            title={!perUnitInputsEnabled ? perUnitDisabledReason() : ""}
+          >
+            $/sf/mo
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Monthly Property NOI */}
+        {/* Monthly Property NOI (editable) */}
         <div
           className={getSectionClass("monthly")}
-          onClick={() => !isFieldDisabled() && setActiveSection("monthly")}
-          title={isFieldDisabled() ? getTooltipMessage() : ""}
+          onClick={() => setActiveSection("monthly")}
         >
           <h3 className="text-lg font-semibold mb-3 flex items-center">
             <i className="fas fa-building mr-2"></i>
             Monthly Property NOI
-            {isFieldDisabled() && (
-              <i className="fas fa-lock ml-2 text-gray-400" title={getTooltipMessage()}></i>
-            )}
           </h3>
           <div className="relative">
             <span className="absolute left-3 top-3 text-gray-500">$</span>
             <input
               type="text"
               value={noiData.monthlyPropertyNOI}
-              onChange={(e) => handleNOIChange("monthly", e.target.value)}
-              className={`block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                isFieldDisabled() ? "cursor-not-allowed bg-gray-100" : ""
-              }`}
+              onChange={(e) => handleMonthlyChange(e.target.value)}
+              className="block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="50,000"
-              onFocus={() => !isFieldDisabled() && setActiveSection("monthly")}
-              disabled={isFieldDisabled()}
-              title={isFieldDisabled() ? getTooltipMessage() : ""}
+              onFocus={() => setActiveSection("monthly")}
             />
           </div>
         </div>
 
-        {/* Monthly NOI per Acre ($/acre/mo) */}
+        {/* Monthly NOI per Acre (editable if mode=acre; otherwise read-only) */}
         <div
           className={getSectionClass("acre")}
-          onClick={() => !isFieldDisabled() && setActiveSection("acre")}
-          title={isFieldDisabled() ? getTooltipMessage() : ""}
+          onClick={() => setActiveSection("acre")}
+          title={!perUnitInputsEnabled ? perUnitDisabledReason() : ""}
         >
           <h3 className="text-lg font-semibold mb-3 flex items-center">
             <i className="fas fa-map mr-2"></i>
             Monthly NOI per Acre ($/acre/mo)
-            {isFieldDisabled() && (
-              <i className="fas fa-lock ml-2 text-gray-400" title={getTooltipMessage()}></i>
+            {(!perUnitInputsEnabled || inputMode !== "acre") && (
+              <i className="fas fa-lock ml-2 text-gray-400"></i>
             )}
           </h3>
           <div className="relative">
@@ -216,29 +235,30 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
             <input
               type="text"
               value={noiData.monthlyAcreNOI}
-              onChange={(e) => handleNOIChange("acre", e.target.value)}
-              className={`block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                isFieldDisabled() ? "cursor-not-allowed bg-gray-100" : ""
+              onChange={(e) => handleAcreRateChange(e.target.value)}
+              className={`block w-full pl-8 pr-3 py-3 border rounded-md focus:outline-none ${
+                inputMode === "acre" && perUnitInputsEnabled
+                  ? "border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  : "border-gray-200 bg-gray-50 cursor-not-allowed"
               }`}
-              placeholder="10,000"
-              onFocus={() => !isFieldDisabled() && setActiveSection("acre")}
-              disabled={isFieldDisabled()}
-              title={isFieldDisabled() ? getTooltipMessage() : ""}
+              placeholder="e.g., 8,500"
+              onFocus={() => setActiveSection("acre")}
+              disabled={!perUnitInputsEnabled || inputMode !== "acre"}
             />
           </div>
         </div>
 
-        {/* Monthly NOI per Sq. Ft ($/sf/mo) */}
+        {/* Monthly NOI per Sq. Ft (editable if mode=sqft; otherwise read-only) */}
         <div
           className={getSectionClass("sqft")}
-          onClick={() => !isFieldDisabled() && setActiveSection("sqft")}
-          title={isFieldDisabled() ? getTooltipMessage() : ""}
+          onClick={() => setActiveSection("sqft")}
+          title={!perUnitInputsEnabled ? perUnitDisabledReason() : ""}
         >
           <h3 className="text-lg font-semibold mb-3 flex items-center">
             <i className="fas fa-ruler-combined mr-2"></i>
             Monthly NOI per Sq. Ft ($/sf/mo)
-            {isFieldDisabled() && (
-              <i className="fas fa-lock ml-2 text-gray-400" title={getTooltipMessage()}></i>
+            {(!perUnitInputsEnabled || inputMode !== "sqft") && (
+              <i className="fas fa-lock ml-2 text-gray-400"></i>
             )}
           </h3>
           <div className="relative">
@@ -246,19 +266,19 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
             <input
               type="text"
               value={noiData.monthlySqFtNOI}
-              onChange={(e) => handleNOIChange("sqft", e.target.value)}
-              className={`block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                isFieldDisabled() ? "cursor-not-allowed bg-gray-100" : ""
+              onChange={(e) => handleSqftRateChange(e.target.value)}
+              className={`block w-full pl-8 pr-3 py-3 border rounded-md focus:outline-none ${
+                inputMode === "sqft" && perUnitInputsEnabled
+                  ? "border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  : "border-gray-200 bg-gray-50 cursor-not-allowed"
               }`}
-              placeholder="0.25"
-              onFocus={() => !isFieldDisabled() && setActiveSection("sqft")}
-              disabled={isFieldDisabled()}
-              title={isFieldDisabled() ? getTooltipMessage() : ""}
+              placeholder="e.g., 0.35"
+              onFocus={() => setActiveSection("sqft")}
+              disabled={!perUnitInputsEnabled || inputMode !== "sqft"}
             />
           </div>
         </div>
       </div>
-
       {/* Summary */}
       <div className="mt-6 p-4 bg-gray-50 rounded-lg">
         <h4 className="font-semibold text-gray-800 mb-2">Annual NOI Summary</h4>
