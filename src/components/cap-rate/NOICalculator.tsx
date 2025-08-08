@@ -31,13 +31,23 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
 
   const clampNonNegative = (n: number): number => (n < 0 ? 0 : n);
 
-  // NEW FORMULA:
-  // Total = (acreRate * max(acres - buildingAcres, 0)) + (sqftRate * buildingSqFt)
-  const computeMonthlyTotal = (acreRateStr: string, sqftRateStr: string): number => {
-    const acreRate = clampNonNegative(parseFormattedNumber(acreRateStr));
-    const sqftRate = clampNonNegative(parseFormattedNumber(sqftRateStr));
+  /**
+   * TOTAL (monthly) =
+   *   (Monthly NOI per Acre × (Acres − Building Sq Ft in acres))
+   * + ((Annual NOI per Sq Ft ÷ 12) × Building Sq Ft)
+   *
+   * NOTE: We store the annual $/sf value in `noiData.monthlySqFtNOI` for compatibility.
+   */
+  const computeMonthlyTotal = (acreRateStr: string, annualSqFtRateStr: string): number => {
+    const acreRateMonthly = clampNonNegative(parseFormattedNumber(acreRateStr));
+    const annualSqFtRate = clampNonNegative(parseFormattedNumber(annualSqFtRateStr));
+    const monthlySqFtRate = annualSqFtRate / 12;
+
     const netLandAcres = clampNonNegative(acres - buildingAcres);
-    const total = acreRate * netLandAcres + sqftRate * buildingSqFt;
+
+    const total =
+      acreRateMonthly * netLandAcres + monthlySqFtRate * buildingSqFt;
+
     return clampNonNegative(total);
   };
 
@@ -52,8 +62,7 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
       const totalMonthly = computeMonthlyTotal(safeValueStr, noiData.monthlySqFtNOI);
       setNoiData((prev) => ({
         ...prev,
-        monthlyAcreNOI: safeValueStr,
-        monthlySqFtNOI: prev.monthlySqFtNOI,
+        monthlyAcreNOI: safeValueStr, // monthly $/acre
         monthlyPropertyNOI: formatNumber(totalMonthly, 2),
       }));
       setActiveSection("acre");
@@ -61,8 +70,7 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
       const totalMonthly = computeMonthlyTotal(noiData.monthlyAcreNOI, safeValueStr);
       setNoiData((prev) => ({
         ...prev,
-        monthlySqFtNOI: safeValueStr,
-        monthlyAcreNOI: prev.monthlyAcreNOI,
+        monthlySqFtNOI: safeValueStr, // ANNUAL $/sf (intentionally stored here)
         monthlyPropertyNOI: formatNumber(totalMonthly, 2),
       }));
       setActiveSection("sqft");
@@ -80,9 +88,7 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
     const isActive =
       (section === "acre" && activeSection === "acre") ||
       (section === "sqft" && activeSection === "sqft");
-    return `${baseClass} ${
-      isActive ? "active border-blue-500" : "border-gray-200 hover:border-gray-300"
-    }`;
+    return `${baseClass} ${isActive ? "active border-blue-500" : "border-gray-200 hover:border-gray-300"}`;
   };
 
   const getTooltipMessage = (): string => {
@@ -120,7 +126,7 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md-grid-cols-3 gap-6 md:grid-cols-3">
         {/* Monthly Property NOI (READ-ONLY, derived) */}
         <div className={getSectionClass("monthly")} title={getTooltipMessage()}>
           <h3 className="text-lg font-semibold mb-3 flex items-center">
@@ -128,7 +134,7 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
             Monthly Property NOI
             <i
               className="fas fa-lock ml-2 text-gray-400"
-              title="Calculated from the two rates (land area excludes building footprint)"
+              title="Calculated from Monthly $/acre and (Annual $/sf ÷ 12)."
             ></i>
           </h3>
           <div className="relative">
@@ -173,11 +179,11 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
             />
           </div>
           <p className="mt-2 text-xs text-gray-500">
-            Uses net land area: acres − (building sq ft ÷ {ACRE_SF.toLocaleString()}).
+            Land uses net area: acres − (building sq ft ÷ {ACRE_SF.toLocaleString()}).
           </p>
         </div>
 
-        {/* Monthly NOI per Sq. Ft (editable) */}
+        {/* Annual NOI per Sq. Ft (editable; divided by 12 in calc) */}
         <div
           className={getSectionClass("sqft")}
           onClick={() => hasSizes && setActiveSection("sqft")}
@@ -185,7 +191,7 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
         >
           <h3 className="text-lg font-semibold mb-3 flex items-center">
             <i className="fas fa-ruler-combined mr-2"></i>
-            Monthly NOI per Sq. Ft
+            Annual NOI per Sq. Ft
             {!hasSizes && (
               <i className="fas fa-lock ml-2 text-gray-400" title={getTooltipMessage()}></i>
             )}
@@ -194,17 +200,20 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
             <span className="absolute left-3 top-3 text-gray-500">$</span>
             <input
               type="text"
-              value={noiData.monthlySqFtNOI}
+              value={noiData.monthlySqFtNOI /* stores ANNUAL $/sf */}
               onChange={(e) => handleRateChange("sqft", e.target.value)}
               className={`block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 !hasSizes ? "cursor-not-allowed bg-gray-100" : ""
               }`}
-              placeholder="2.50"
+              placeholder="30.00"
               onFocus={() => hasSizes && setActiveSection("sqft")}
               disabled={!hasSizes}
               title={!hasSizes ? getTooltipMessage() : ""}
             />
           </div>
+          <p className="mt-2 text-xs text-gray-500">
+            Building portion uses (annual ÷ 12) × building sq ft.
+          </p>
         </div>
       </div>
 
@@ -227,7 +236,7 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
           <div>
             <span className="text-gray-600">Annual NOI per Sq. Ft (rate):</span>
             <div className="font-semibold text-purple-600">
-              {formatCurrency(parseFormattedNumber(noiData.monthlySqFtNOI) * 12)}
+              {formatCurrency(parseFormattedNumber(noiData.monthlySqFtNOI))}
             </div>
           </div>
         </div>
