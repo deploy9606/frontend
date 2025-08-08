@@ -234,9 +234,9 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
             </div>
           </div>
           <div>
-            <span className="text-gray-600">Annual NOI per Sq. Ft (rate):</span>
+            <span className="text-gray-600">Annual NOI for Sq. Ft (rate):</span>
             <div className="font-semibold text-purple-600">
-              {formatCurrency(parseFormattedNumber(noiData.monthlySqFtNOI))}
+              {formatCurrency(parseFormattedNumber(noiData.monthlySqFtNOI)*parseFormattedNumber(propertyData.buildingSize))}
             </div>
           </div>
         </div>

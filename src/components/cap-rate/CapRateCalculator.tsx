@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import type { CapRatePropertyData, NOIData, Assumptions} from "../../types";
 import { ManualEntry } from "./ManualEntry.tsx";
 import { NOICalculator } from "./NOICalculator.tsx";
@@ -10,6 +10,7 @@ import CapRateAnalysisDisplay  from "./CapRateAnalysisDisplay.tsx";
 import MarketOverview from "./MarketOverview.tsx";
 import Development from "./Development.tsx";
 import InvestmentRecommendation from "./InvestmentRecommendation.tsx";
+import { GenerateReportButton } from "./GenerateReportButton.tsx";
 
 const CapRateCalculator: React.FC = () => {
 	// Property Data State
@@ -41,6 +42,14 @@ const CapRateCalculator: React.FC = () => {
 		ltc: "30",
 		capex: "150000",
 	});
+	const noiRef = useRef<HTMLDivElement>(null);
+	const capRateRef = useRef<HTMLDivElement>(null);
+	const marketStudyRef = useRef<HTMLDivElement>(null);
+	const marketOverviewRef = useRef<HTMLDivElement>(null);
+	const developmentRef = useRef<HTMLDivElement>(null);
+	const capRateAnalysisDisplayRef = useRef<HTMLDivElement>(null);
+	const investmentRecommendationRef = useRef<HTMLDivElement>(null);
+
 
 
 
@@ -58,9 +67,34 @@ const CapRateCalculator: React.FC = () => {
 				</div>
 
 				<div className="space-y-8">
+					<GenerateReportButton
+						coverMeta={{
+							logoSrc: new URL("/logo.png", window.location.origin).href,
+							brandColor: "#c00000",
+							title: "9606 Capital - Industrial Property Investment Analysis",
+							date: new Date().toLocaleDateString(),
+							propertyAddress: propertyData.propertyAddress,
+							propertyType: propertyData.propertyType,
+							propertySize: propertyData.propertySize,
+							buildingSize: propertyData.buildingSize,
+						}}
+						sections={[
+							{ ref: noiRef as unknown as React.RefObject<HTMLElement>, title: "NOI Calculator" },
+							{ ref: capRateRef as unknown as React.RefObject<HTMLElement>, title: "Cap Rate Calculator" },
+							{ ref: marketStudyRef as unknown as React.RefObject<HTMLElement>, title: "Market Study" },
+							{ ref: marketOverviewRef as unknown as React.RefObject<HTMLElement>, title: "Market Overview" },
+							{ ref: developmentRef as unknown as React.RefObject<HTMLElement>, title: "Development" },
+							{ ref: capRateAnalysisDisplayRef as unknown as React.RefObject<HTMLElement>, title: "Cap Rate Analysis" },
+							{ ref: investmentRecommendationRef as unknown as React.RefObject<HTMLElement>, title: "Investment Recommendation" },
+						]}
+						filename="Property_Analysis_Report.pdf"
+						pageFormat="letter"
+						includePageNumbers />
+
+
 					{/* Manual Entry Section */}
 					<ManualEntry propertyData={propertyData} setPropertyData={setPropertyData} />
-
+					
 					{/* NOI Calculator Section */}
 					<NOICalculator
 						noiData={noiData}
@@ -73,7 +107,7 @@ const CapRateCalculator: React.FC = () => {
 						assumptions={assumptions}
 						setAssumptions={setAssumptions}
 					/>
-
+					<div ref={noiRef} className="bg-white">
 					{/* Results Section */}
 					{noiData.monthlyPropertyNOI && propertyData.sellerAskingPrice && (
 						<Results
@@ -82,22 +116,33 @@ const CapRateCalculator: React.FC = () => {
 							assumptions={assumptions}
 						/>
 					)}
-
+					</div>
+					<div ref={capRateRef} className="bg-white">
 					{/* Custom Cap Rate Calculator */}
 					{noiData.monthlyPropertyNOI && (
 						<CustomCapRateCalculator noiData={noiData} assumptions={assumptions} />
 					)}
+					</div>
+					<div ref={marketStudyRef} className="bg-white">
 
 					{/* Market Study Section */}
 					<MarketStudy propertyData={propertyData} />
+					</div>
+					<div ref={capRateAnalysisDisplayRef} className="bg-white">
 					{/* Market Data Estimation */}
 					<CapRateAnalysisDisplay propData={propertyData} />
+					</div>
+					<div ref={marketOverviewRef} className="bg-white">
 					<MarketOverview propData={propertyData} />
-
+					</div>
+					<div ref={developmentRef} className="bg-white">
 					{/* Cap Rate Analysis Display */}
 					<Development propData={propertyData} />
+					</div>
+					<div ref={investmentRecommendationRef} className="bg-white">
 
 					<InvestmentRecommendation propData={propertyData} />
+					</div>
 					
 					
 				</div>
