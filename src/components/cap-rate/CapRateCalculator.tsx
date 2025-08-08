@@ -69,7 +69,7 @@ const CapRateCalculator: React.FC = () => {
 				<div className="space-y-8">
 					<GenerateReportButton
 						coverMeta={{
-							logoSrc: new URL("/logo.png", window.location.origin).href,
+							logoSrc: new URL("/9606.png", window.location.origin).href,
 							brandColor: "#c00000",
 							title: "9606 Capital - Industrial Property Investment Analysis",
 							date: new Date().toLocaleDateString(),
