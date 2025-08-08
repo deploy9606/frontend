@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import type { NOIData, CapRatePropertyData } from "../../types";
 import {
   parseFormattedNumber,
   formatCurrency,
+  formatStringValue,
   formatNumber,
 } from "../../utils/calculations";
 
@@ -12,79 +13,85 @@ interface NOICalculatorProps {
   propertyData: CapRatePropertyData;
 }
 
-/**
- * Monthly NOI (derived, read-only) =
- *   ($/acre/mo × acres) + ($/sf/mo × building sf)
- * - Only $/acre/mo and $/sf/mo are editable.
- * - Any negative input or derived value clamps to 0.
- * - Sizes come from propertyData.
- */
 export const NOICalculator: React.FC<NOICalculatorProps> = ({
   noiData,
   setNoiData,
   propertyData,
 }) => {
-  const [activeSection, setActiveSection] = useState<"monthly" | "acre" | "sqft">("monthly");
+  const [activeSection, setActiveSection] = useState<"acre" | "sqft">("acre");
 
-  // Helpers (no `any`)
-  const toNum = (v: string | number | null | undefined): number =>
-    parseFormattedNumber(String(v ?? ""));
-  const fmtNum = (n: number, dp: number) =>
-    formatNumber(Number.isFinite(n) ? n : 0, dp);
-  const clamp0 = (n: number) => (Number.isFinite(n) ? Math.max(0, n) : 0);
+  const hasSizes =
+    Boolean(propertyData.propertySize) && Boolean(propertyData.buildingSize);
 
-  // Sizes (clamped non-negative)
-  const acres = clamp0(propertyData.propertySize ? toNum(propertyData.propertySize) : 0);
-  const sqft  = clamp0(propertyData.buildingSize ? toNum(propertyData.buildingSize) : 0);
+  const ACRE_SF = 43560;
 
-  // Current rates
-  const acreRate = clamp0(noiData.monthlyAcreNOI ? toNum(noiData.monthlyAcreNOI) : 0);
-  const sqftRate = clamp0(noiData.monthlySqFtNOI ? toNum(noiData.monthlySqFtNOI) : 0);
+  const acres = hasSizes ? parseFormattedNumber(propertyData.propertySize as string) : 0;
+  const buildingSqFt = hasSizes ? parseFormattedNumber(propertyData.buildingSize as string) : 0;
+  const buildingAcres = buildingSqFt / ACRE_SF;
 
-  const sizesReady = acres > 0 && sqft > 0;
+  const clampNonNegative = (n: number): number => (n < 0 ? 0 : n);
 
-  // Recompute monthly NOI from current rates + sizes
-  const computeMonthly = (acreR: number, sqftR: number, ac: number, sf: number) =>
-    clamp0(acreR * ac + sqftR * sf);
-
-  // Keep monthly NOI in sync if sizes change
-  useEffect(() => {
-    const newMonthly = computeMonthly(acreRate, sqftRate, acres, sqft);
-    setNoiData((prev) => ({
-      ...prev,
-      monthlyPropertyNOI: fmtNum(newMonthly, 2),
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [acres, sqft]);
-
-  // Handlers: edit $/acre/mo or $/sf/mo; monthly updates automatically
-  const handleAcreRateChange = (value: string) => {
-    const newAcre = clamp0(parseFormattedNumber(value));
-    const newMonthly = computeMonthly(newAcre, sqftRate, acres, sqft);
-    setNoiData((prev) => ({
-      ...prev,
-      monthlyAcreNOI: fmtNum(newAcre, 2),
-      monthlyPropertyNOI: fmtNum(newMonthly, 2),
-    }));
-    setActiveSection("acre");
+  // NEW FORMULA:
+  // Total = (acreRate * max(acres - buildingAcres, 0)) + (sqftRate * buildingSqFt)
+  const computeMonthlyTotal = (acreRateStr: string, sqftRateStr: string): number => {
+    const acreRate = clampNonNegative(parseFormattedNumber(acreRateStr));
+    const sqftRate = clampNonNegative(parseFormattedNumber(sqftRateStr));
+    const netLandAcres = clampNonNegative(acres - buildingAcres);
+    const total = acreRate * netLandAcres + sqftRate * buildingSqFt;
+    return clampNonNegative(total);
   };
 
-  const handleSqftRateChange = (value: string) => {
-    const newSqft = clamp0(parseFormattedNumber(value));
-    const newMonthly = computeMonthly(acreRate, newSqft, acres, sqft);
-    setNoiData((prev) => ({
-      ...prev,
-      monthlySqFtNOI: fmtNum(newSqft, 4),
-      monthlyPropertyNOI: fmtNum(newMonthly, 2),
-    }));
-    setActiveSection("sqft");
+  const handleRateChange = (section: "acre" | "sqft", rawValue: string) => {
+    if (!hasSizes) return;
+
+    const typedValueNum = parseFormattedNumber(rawValue);
+    const safeValueStr =
+      typedValueNum < 0 ? formatNumber(0, 2) : formatStringValue(rawValue);
+
+    if (section === "acre") {
+      const totalMonthly = computeMonthlyTotal(safeValueStr, noiData.monthlySqFtNOI);
+      setNoiData((prev) => ({
+        ...prev,
+        monthlyAcreNOI: safeValueStr,
+        monthlySqFtNOI: prev.monthlySqFtNOI,
+        monthlyPropertyNOI: formatNumber(totalMonthly, 2),
+      }));
+      setActiveSection("acre");
+    } else {
+      const totalMonthly = computeMonthlyTotal(noiData.monthlyAcreNOI, safeValueStr);
+      setNoiData((prev) => ({
+        ...prev,
+        monthlySqFtNOI: safeValueStr,
+        monthlyAcreNOI: prev.monthlyAcreNOI,
+        monthlyPropertyNOI: formatNumber(totalMonthly, 2),
+      }));
+      setActiveSection("sqft");
+    }
   };
 
   const getSectionClass = (section: "monthly" | "acre" | "sqft") => {
-    const base = "noi-section p-6 rounded-lg border-2 transition-all";
-    return `${base} ${
-      activeSection === section ? "active border-blue-500" : "border-gray-200 hover:border-gray-300"
+    const isDisabled = !hasSizes || section === "monthly";
+    const baseClass = `noi-section p-6 rounded-lg border-2 transition-all ${
+      isDisabled
+        ? "cursor-not-allowed opacity-50 border-gray-200 bg-gray-100"
+        : "cursor-pointer"
     }`;
+    if (isDisabled) return baseClass;
+    const isActive =
+      (section === "acre" && activeSection === "acre") ||
+      (section === "sqft" && activeSection === "sqft");
+    return `${baseClass} ${
+      isActive ? "active border-blue-500" : "border-gray-200 hover:border-gray-300"
+    }`;
+  };
+
+  const getTooltipMessage = (): string => {
+    if (!propertyData.propertySize && !propertyData.buildingSize) {
+      return "Please enter both property size (acres) and building size (sq ft) first";
+    }
+    if (!propertyData.propertySize) return "Please enter property size (acres) first";
+    if (!propertyData.buildingSize) return "Please enter building size (sq ft) first";
+    return "";
   };
 
   return (
@@ -94,7 +101,7 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
         Net Operating Income (Monthly)
       </h2>
 
-      {!sizesReady && (
+      {(!propertyData.propertySize || !propertyData.buildingSize) && (
         <div className="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-md">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -102,11 +109,11 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
             </div>
             <div className="ml-3">
               <p className="text-sm text-yellow-700">
-                <strong>Heads up:</strong> Monthly NOI is derived from per-unit values and the sizes in property data.
+                <strong>Required Information:</strong> To use the NOI calculator, please first enter:
               </p>
               <ul className="mt-2 text-sm text-yellow-700 list-disc list-inside">
-                {acres === 0 && <li>Property size (acres) is missing.</li>}
-                {sqft === 0 && <li>Building size (sq ft) is missing.</li>}
+                {!propertyData.propertySize && <li>Property size (acres)</li>}
+                {!propertyData.buildingSize && <li>Building size (square feet)</li>}
               </ul>
             </div>
           </div>
@@ -114,59 +121,88 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Monthly Property NOI (read-only) */}
-        <div className={getSectionClass("monthly")} onClick={() => setActiveSection("monthly")}>
+        {/* Monthly Property NOI (READ-ONLY, derived) */}
+        <div className={getSectionClass("monthly")} title={getTooltipMessage()}>
           <h3 className="text-lg font-semibold mb-3 flex items-center">
             <i className="fas fa-building mr-2"></i>
-            Monthly Property NOI (derived)
+            Monthly Property NOI
+            <i
+              className="fas fa-lock ml-2 text-gray-400"
+              title="Calculated from the two rates (land area excludes building footprint)"
+            ></i>
           </h3>
           <div className="relative">
             <span className="absolute left-3 top-3 text-gray-500">$</span>
             <input
               type="text"
               value={noiData.monthlyPropertyNOI}
+              className="block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+              placeholder="50,000"
+              disabled
               readOnly
-              className="block w-full pl-8 pr-3 py-3 border border-gray-200 bg-gray-50 rounded-md cursor-not-allowed"
-              placeholder="0.00"
-              onFocus={() => setActiveSection("monthly")}
             />
           </div>
         </div>
 
         {/* Monthly NOI per Acre (editable) */}
-        <div className={getSectionClass("acre")} onClick={() => setActiveSection("acre")}>
+        <div
+          className={getSectionClass("acre")}
+          onClick={() => hasSizes && setActiveSection("acre")}
+          title={!hasSizes ? getTooltipMessage() : ""}
+        >
           <h3 className="text-lg font-semibold mb-3 flex items-center">
             <i className="fas fa-map mr-2"></i>
-            Monthly NOI per Acre ($/acre/mo)
+            Monthly NOI per Acre
+            {!hasSizes && (
+              <i className="fas fa-lock ml-2 text-gray-400" title={getTooltipMessage()}></i>
+            )}
           </h3>
           <div className="relative">
             <span className="absolute left-3 top-3 text-gray-500">$</span>
             <input
               type="text"
               value={noiData.monthlyAcreNOI}
-              onChange={(e) => handleAcreRateChange(e.target.value)}
-              className="block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., 8,500"
-              onFocus={() => setActiveSection("acre")}
+              onChange={(e) => handleRateChange("acre", e.target.value)}
+              className={`block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                !hasSizes ? "cursor-not-allowed bg-gray-100" : ""
+              }`}
+              placeholder="10,000"
+              onFocus={() => hasSizes && setActiveSection("acre")}
+              disabled={!hasSizes}
+              title={!hasSizes ? getTooltipMessage() : ""}
             />
           </div>
+          <p className="mt-2 text-xs text-gray-500">
+            Uses net land area: acres − (building sq ft ÷ {ACRE_SF.toLocaleString()}).
+          </p>
         </div>
 
         {/* Monthly NOI per Sq. Ft (editable) */}
-        <div className={getSectionClass("sqft")} onClick={() => setActiveSection("sqft")}>
+        <div
+          className={getSectionClass("sqft")}
+          onClick={() => hasSizes && setActiveSection("sqft")}
+          title={!hasSizes ? getTooltipMessage() : ""}
+        >
           <h3 className="text-lg font-semibold mb-3 flex items-center">
             <i className="fas fa-ruler-combined mr-2"></i>
-            Monthly NOI per Sq. Ft ($/sf/mo)
+            Monthly NOI per Sq. Ft
+            {!hasSizes && (
+              <i className="fas fa-lock ml-2 text-gray-400" title={getTooltipMessage()}></i>
+            )}
           </h3>
           <div className="relative">
             <span className="absolute left-3 top-3 text-gray-500">$</span>
             <input
               type="text"
               value={noiData.monthlySqFtNOI}
-              onChange={(e) => handleSqftRateChange(e.target.value)}
-              className="block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., 0.35"
-              onFocus={() => setActiveSection("sqft")}
+              onChange={(e) => handleRateChange("sqft", e.target.value)}
+              className={`block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                !hasSizes ? "cursor-not-allowed bg-gray-100" : ""
+              }`}
+              placeholder="2.50"
+              onFocus={() => hasSizes && setActiveSection("sqft")}
+              disabled={!hasSizes}
+              title={!hasSizes ? getTooltipMessage() : ""}
             />
           </div>
         </div>
@@ -179,19 +215,19 @@ export const NOICalculator: React.FC<NOICalculatorProps> = ({
           <div>
             <span className="text-gray-600">Annual Property NOI:</span>
             <div className="font-semibold text-green-600">
-              {formatCurrency(toNum(noiData.monthlyPropertyNOI) * 12)}
+              {formatCurrency(parseFormattedNumber(noiData.monthlyPropertyNOI) * 12)}
             </div>
           </div>
           <div>
-            <span className="text-gray-600">Annual NOI per Acre:</span>
+            <span className="text-gray-600">Annual NOI per Acre (rate):</span>
             <div className="font-semibold text-blue-600">
-              {formatCurrency(toNum(noiData.monthlyAcreNOI) * 12)} / acre / yr
+              {formatCurrency(parseFormattedNumber(noiData.monthlyAcreNOI) * 12)}
             </div>
           </div>
           <div>
-            <span className="text-gray-600">Annual NOI per Sq. Ft:</span>
+            <span className="text-gray-600">Annual NOI per Sq. Ft (rate):</span>
             <div className="font-semibold text-purple-600">
-              {formatCurrency(toNum(noiData.monthlySqFtNOI) * 12)} / sf / yr
+              {formatCurrency(parseFormattedNumber(noiData.monthlySqFtNOI) * 12)}
             </div>
           </div>
         </div>
